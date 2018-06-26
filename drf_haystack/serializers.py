@@ -21,6 +21,7 @@ from haystack.utils import Highlighter
 
 from rest_framework import serializers
 from rest_framework.fields import empty
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.utils.field_mapping import ClassLookupDict, get_field_kwargs
 
 from drf_haystack.fields import (
@@ -237,7 +238,11 @@ class HaystackSerializer(six.with_metaclass(HaystackSerializerMeta, serializers.
 
         # include the highlighted field in either case
         if getattr(instance, "highlighted", None):
-            ret["highlighted"] = instance.highlighted[0]
+            if type(instance.highlighted) == dict:
+                ret["highlighted"] = instance.highlighted['text']
+            else:
+                ret["highlighted"] = instance.highlighted[0]
+
         return ret
 
     def multi_serializer_representation(self, instance):
@@ -399,7 +404,7 @@ class HaystackFacetSerializer(six.with_metaclass(HaystackSerializerMeta, seriali
         if page is not None:
             serializer = view.get_facet_objects_serializer(page, many=True)
             return OrderedDict([
-                ("count", self.get_count(queryset)),
+                ("count", LimitOffsetPagination().get_count(queryset)),
                 ("next", view.paginator.get_next_link()),
                 ("previous", view.paginator.get_previous_link()),
                 ("results", serializer.data)
